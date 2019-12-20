@@ -26,4 +26,8 @@ public class BankDB {
 		b.setAccounts(l);
 		return b;
 	}
+	public void sendTransfer(BankTransfer t) {
+		
+		
+	}
 }
