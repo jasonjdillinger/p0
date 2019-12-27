@@ -8,19 +8,22 @@ public class BankAccount implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private String user;
+	private BankCustomer user;
 	private String accountName;
+	private int accountID;
 	private double balance;
+	private boolean active;
 	public BankAccount() {}
-	public BankAccount(String user, String accountName, double balance) {
+	public BankAccount(BankCustomer user, String accountName, double balance,int accountID,boolean active) {
 		this.setUser(user);
 		this.setBalance(balance);	
 		this.setAccountName(accountName);
+		this.setAccountID(accountID);
 	}
-	public String getUser() {
+	public BankCustomer getUser() {
 		return user;
 	}
-	public void setUser(String user) {
+	public void setUser(BankCustomer user) {
 		this.user = user;
 	}
 	public String getaccountName() {
@@ -38,5 +41,17 @@ public class BankAccount implements Serializable {
 	public String toString() {
 		return String.format("%20s  %.2f",accountName,balance);
 		
+	}
+	public int getAccountID() {
+		return accountID;
+	}
+	public void setAccountID(int accountID) {
+		this.accountID = accountID;
+	}
+	public boolean isActive() {
+		return active;
+	}
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 }

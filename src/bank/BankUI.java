@@ -7,9 +7,11 @@ import com.sun.xml.internal.bind.v2.schemagen.xmlschema.List;
 
 public class BankUI {
 	private Scanner scan;
+	private BankBusiness busi;
 	private BankDB db;
 	public BankUI() {
 		scan = new Scanner(System.in);
+		busi=new BankBusiness();
 		db=new BankDB();
 	}
 	
@@ -18,9 +20,8 @@ public class BankUI {
 		while(!end) {
 			System.out.println("1. Login");
 			System.out.println("2. Create User");
-			System.out.println("3. Exit");
-			String option= scan.nextLine();		
-			char optionchar=option.charAt(0);
+			System.out.println("3. Exit");		
+			char optionchar=BankBusiness.querySelection(scan);
 			switch(optionchar) {
 				case '1':
 					this.userLogin();
@@ -36,42 +37,52 @@ public class BankUI {
 	}
 	private void userLogin() {
 		String user="";
-		String password="";
-		Boolean found;
-		while(!user.equals("QUIT")) {
-			System.out.println("Login Screen(enter QUIT to quit)");
-			System.out.println();
-			System.out.print("User:");
-			user= scan.nextLine();
-			if(user.equals("QUIT")) {break;}
-			found=db.doesUserExist(user);
-			if(found==true) {
-				while(!password.equals("QUIT")) {
-					System.out.print("Password:");
-					password= scan.nextLine();
-					if(password.equals("QUIT")) {break;}
-					found=db.isPasswordCorrect(user,password);
-					if(found==true) {
-						BankUser bUser=db.getUser(user, password);
-						if(bUser.getClass().equals(BankCustomer.class)) {
-							this.customerMenu((BankCustomer)bUser);
-						}
-						else if(bUser.getClass().equals(BankEmployee.class)) {
-														
-						}
-						password="QUIT";
-					}
-					else {
-						System.out.println("Password incorrect.");
-					}
+		System.out.println("Login Screen(enter QUIT to quit)");
+		user=busi.getUser(scan,"User:",false);
+		BankUser bUser=busi.checkPassword(scan, user);		
+		if(bUser.getClass().equals(BankCustomer.class)) {
+			this.customerMenu((BankCustomer)bUser);
+		}
+		else if(bUser.getClass().equals(BankEmployee.class)) {
+			this.employeeMenu((BankEmployee)bUser);							
+		}
+
+		}
+	private void employeeMenu(BankEmployee employee) {
+		boolean end=false;
+		while(!end) {
+			System.out.println("1. View accounts:");
+			System.out.println("2. Approve pending account requests");
+			System.out.println("3. View all transactions");
+			System.out.println("4. Exit:");
+			String option= scan.nextLine();		
+			char optionchar=option.charAt(0);
+			switch(optionchar) {
+				case '1':
+					viewUserAccounts(employee);
+					break;
+				case '2':
+					break;
+				case '3':
+					break;
+				case '4': 
+				case 'q':
+				case 'Q':end=true; break;
+				default: 
+					System.out.println("Invalid Input");			
 				}
-				user="QUIT";
-			}
-			else {
-				System.out.println("User doesn't exist.");
-			}
 		}
+	}
+	private void viewUserAccounts(BankEmployee employee) {
+		String user=busi.getUser(scan,"Enter User:(QUIT to quit)",true);
+		BankCustomer customer=(BankCustomer)db.getUser(user);
+		ArrayList<BankAccount> accounts = customer.getAccounts();
+		for(BankAccount b:accounts) {
+			System.out.println(b.toString());
 		}
+		System.out.println("Enter anything to continue.");
+		scan.nextLine();
+	}
 		private void customerMenu(BankCustomer customer) {
 			boolean end=false;
 			while(!end) {
@@ -89,15 +100,19 @@ public class BankUI {
 						this.viewAccounts(customer);
 						break;
 					case '2':
+						this.requestAccount(customer);
 						break;
 					case '3':
+						this.makeWithdrawl(customer);
 						break;
 					case '4':
+						this.makeDeposit(customer);
 						break;
 					case '5':
 						this.sendTransfer(customer);
 						break;
 					case '6':
+						this.acceptTransfer(customer);
 						break;
 					case '7': 
 					case 'q':
@@ -115,56 +130,40 @@ public class BankUI {
 			System.out.println("Enter anything to continue.");
 			scan.nextLine();
 		}
+		private void requestAccount(BankCustomer customer) {
+			System.out.println("Enter desired accont name");
+			String name=scan.nextLine();
+			if(name.equals("QUIT") || name.equals("")) {return;}
+			Double startingAmount = busi.selectDouble(scan, "Enter starting balance","Please enter valid starting balance");
+			db.createAccountRequest(name,startingAmount,customer);
+		}
+		private void makeDeposit(BankCustomer customer) {
+			BankAccount b=busi.selectPromptAccount(scan,customer,"Deposit to which account?(enter QUIT to quit)");
+			if(b==null) {return;}
+			Double depositAmount = busi.selectDouble(scan, "Deposit how much? (enter QUIT to quit)","Please enter valid deposit amount.");
+			if(depositAmount<0) {return;}		
+		}
+		private void makeWithdrawl(BankCustomer customer) {
+			BankAccount b=busi.selectPromptAccount(scan,customer,"Withdraw from which account?(enter QUIT to quit)");
+			if(b==null) {return;}
+			Double withdrawAmount = busi.selectDouble(scan, "Withdraw how much? (enter QUIT to quit)","Please enter valid withdrawl amount.",b.getBalance());
+			if(withdrawAmount<0) {return;}		
+		}
 		private void sendTransfer(BankCustomer customer) {
-			String receiver="";
-			String account="";
-			int accountno=0;
-			String password="";
-			int i=0;
-			boolean found;
-			boolean validAccount;
-			BankAccount bAccount;
-			while(!receiver.equals("QUIT")) {
-				System.out.println("Transfer to whom?(enter QUIT to quit)");
-				System.out.println();
-				System.out.print("User:");
-				receiver= scan.nextLine();
-				if(receiver.equals("QUIT")) {break;}
-				if(db.doesUserExist(receiver)) {
-					ArrayList<BankAccount> accounts = customer.getAccounts();
-					while(!account.equals("QUIT")) {
-						System.out.println("Transfer from which account?(enter QUIT to quit)");
-						i=1;
-						for(BankAccount b:accounts) {
-							System.out.println((i++)+". "+b.toString());
-						}
-						String option= scan.nextLine();	
-						if(option.equals("QUIT")) {break;}
-						validAccount=true;
-						for(int m=0; m<option.length(); m++) {
-							if(!Character.isDigit(option.charAt(m))) {
-								validAccount=false;								
-							}
-						}
-						if(validAccount) {
-							accountno=Integer.parseInt(option);//should technically check for weird digits				
-							if(accountno<i) {
-								bAccount=accounts.get(accountno-1);							
-							}
-							else {
-								validAccount=false;
-							}
-						}
-						if(!validAccount) {
-							System.out.println("Please enter valid account number.");							
-						}
-					}
-					receiver="QUIT";
-				}
-				else {
-					System.out.println("User doesn't exist.");
-				}
-			}
+			int transferTo=busi.selectAccount(scan, "Transfer to which account?(enter QUIT to quit)");
+			if(transferTo<0) {return;}
+			BankAccount b=busi.selectPromptAccount(scan,customer,"Transfer from which account?(enter QUIT to quit)");
+			if(b==null) {return;}
+			Double transferAmount = busi.selectDouble(scan, "Transfer how much? (enter QUIT to quit)","Please enter valid transfer amount.",b.getBalance());
+			if(transferAmount<0) {return;}		
+		}
+		private void acceptTransfer(BankCustomer customer) {
+			int transferTo=busi.selectAccount(scan, "Transfer to which account?(enter QUIT to quit)");
+			if(transferTo<0) {return;}
+			BankAccount b=busi.selectPromptAccount(scan,customer,"Transfer from which account?(enter QUIT to quit)");
+			if(b==null) {return;}
+			Double transferAmount = busi.selectDouble(scan, "Transfer how much? (enter QUIT to quit)","Please enter valid transfer amount.",b.getBalance());
+			if(transferAmount<0) {return;}		
 		}
 		}
 

@@ -1,18 +1,18 @@
 package bank;
 
 public class BankTransfer {
-	private String sender;
-	private String receiver;
+	private int sender;
+	private int receiver;
 	private double amount;
-	public BankTransfer(String sender,String receiver, double amount) {
+	public BankTransfer(int sender,int receiver, double amount) {
 		this.sender=sender;
 		this.receiver=receiver;
 		this.amount=amount;	
 	}
-	public String getSender() {
+	public int getSender() {
 		return sender;
 	}
-	public void setSender(String sender) {
+	public void setSender(int sender) {
 		this.sender = sender;
 	}
 	public double getAmount() {
@@ -21,10 +21,10 @@ public class BankTransfer {
 	public void setAmount(double amount) {
 		this.amount = amount;
 	}
-	public String getReceiver() {
+	public int getReceiver() {
 		return receiver;
 	}
-	public void setReceiver(String receiver) {
+	public void setReceiver(int receiver) {
 		this.receiver = receiver;
 	}
 }
